@@ -2,6 +2,7 @@ import discord
 from discord.ui import View, Button
 from discord.ext import commands, tasks
 from pymongo import MongoClient
+from dotenv import load_dotenv
 import random
 import asyncio
 import logging
@@ -9,17 +10,37 @@ import time
 import sys
 import os
 import io
+from flask import Flask, jsonify
+from threading import Thread
 sys.stdout.reconfigure(encoding='utf-8')
 sys.stderr.reconfigure(encoding='utf-8')
 
+load_dotenv()
 
 # Set up logging to capture errors
 logging.basicConfig(level=logging.ERROR, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-BOT_TOKEN = "OTUwNDk2NjA2OTk2NzkxMzY2.GwD6Aq.0qNO0yG49H_ljl4vN8t3lw2YEOtDKiaODCGxX0"
-MONGO_URI = "mongodb+srv://Asarja:Alas66666@databasecluster.17fzh.mongodb.net/?retryWrites=true&w=majority&appName=DatabaseCluster"
-OWNER_ID = 489820150758113300  # Replace this with your Discord user ID (as an integer)
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+MONGO_URI = os.getenv("MONGO_URI")
+OWNER_ID = int(os.getenv("OWNER_ID"))  # Ensure OWNER_ID is an integer
+
+app = Flask(__name__)
+
+@app.route("/status")
+def status():
+    return "Bot is running!"
+
+def run_flask():
+    try:
+        app.run(host="0.0.0.0", port=10000)  # Running Flask app on port 10000
+    except Exception as e:
+        logger.error(f"Error in Flask app: {e}")
+
+def run_flask_thread():
+    thread = Thread(target=run_flask)
+    thread.daemon = True
+    thread.start()
 
 intents = discord.Intents.default()
 intents.members = True
@@ -286,5 +307,7 @@ def run_bot():
         time.sleep(10)  # Wait a few seconds before restarting
         run_bot()  # Restart bot on crash
 
-run_bot()
+# Running Flask app in a separate thread
+run_flask_thread()
 
+run_bot()
